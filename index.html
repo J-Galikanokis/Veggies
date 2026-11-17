@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#14532d">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <title>Garden Club Dominator</title>
+  <link rel="manifest" href="manifest.webmanifest">
+  <link rel="icon" href="icon-192.png">
+  <link rel="apple-touch-icon" href="icon-192.png">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Lilita+One&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  <div class="container">
+    <h1><img class="title-wood" src="title-wood.jpg" alt="Garden Club Dominator"></h1>
+    <p class="subtitle">Yendy's competition for "Gardener of the Month"!</p>
+
+    <div class="dock">
+    <div class="stats">
+      <div class="stat">
+        <img class="portrait stat-icon" src="art-coin.jpg" alt="">
+        <span id="coins">0</span>
+        <span id="coin-rate" class="coin-rate">0 c/s</span>
+        <span class="label">coins</span>
+      </div>
+      <div class="stat" id="time-scale">
+        <div class="scale-row">
+          <button data-scale="1">1×</button>
+          <button data-scale="2">2×</button>
+          <button data-scale="5">5×</button>
+          <button data-scale="10">10×</button>
+        </div>
+        <button type="button" id="ranch-jump">San Salvador Ranch</button>
+        <button type="button" id="reset-game">Reset</button>
+      </div>
+    </div>
+
+    <div class="tabs">
+      <button class="tab active" data-tab="garden">Garden</button>
+      <button class="tab" data-tab="upgrades" id="upgrades-tab-btn">Upgrades <span id="upgrades-dot" class="red-dot" style="display:none;"></span></button>
+      <button class="tab" data-tab="achievements" id="achievements-tab-btn">Achievements <span id="achieve-dot" class="red-dot" style="display:none;"></span></button>
+    </div>
+    </div>
+    <div id="reset-dialog" class="reset-dialog" style="display:none">
+      <div class="reset-card">
+        <p>Reset the game? This deletes your saved progress.</p>
+        <div class="reset-actions">
+          <button type="button" id="reset-cancel">Cancel</button>
+          <button type="button" id="reset-confirm">Reset</button>
+        </div>
+      </div>
+    </div>
+    <p id="prestige-banner" class="prestige-banner" style="display:none">Prestige is available. Open Upgrades, then Supportive Neighbors.</p>
+
+    <div id="garden-tab" class="tab-content">
+      <div id="plots"></div>
+      <div class="section">
+        <h2 class="with-icon"><img class="portrait" id="market-icon" src="art-market.jpg" alt=""> <span id="market-title">Market: Rickety Roadside Stand</span></h2>
+        <div id="market-upgrades" style="margin-top:0.75rem;"></div>
+        <p id="market-info">Sell buttons are per-veggie for now</p>
+      </div>
+    </div>
+
+    <div id="achievements-tab" class="tab-content" style="display:none;">
+      <p class="small" id="achieve-count"></p>
+      <div id="achieve-list"></div>
+    </div>
+    <div id="achieve-toast" class="achieve-toast" style="display:none"></div>
+
+    <div id="upgrades-tab" class="tab-content" style="display:none;">
+      <div class="subtabs">
+        <button class="subtab active" data-subtab="helpful">Helpful Neighbors <span id="helpful-dot" class="red-dot" style="display:none;"></span></button>
+        <button class="subtab" data-subtab="generous">Generous Neighbors <span id="generous-dot" class="red-dot" style="display:none;"></span></button>
+        <button class="subtab" data-subtab="supportive"><span id="crew-label">Supportive Neighbors</span> <span id="supportive-dot" class="red-dot" style="display:none;"></span></button>
+      </div>
+      <button type="button" id="upgrade-autobuy" class="tool-btn" style="display:none">Upgrade autobuy: on</button>
+      <div id="helpful-panel" class="subpanel">
+        <button type="button" id="hide-owned" class="tool-btn">Hide owned</button>
+        <div id="helpful-list"></div>
+      </div>
+      <div id="generous-panel" class="subpanel" style="display:none;">
+        <div id="generous-list"></div>
+      </div>
+      <div id="market-panel" class="subpanel" style="display:none;">
+        <div id="market-list"></div>
+      </div>
+      <div id="supportive-panel" class="subpanel" style="display:none;">
+        <div id="supportive-list"></div>
+        <p><img class="portrait" id="compadre-icon" src="art-salsa-compadre.jpg" alt="" style="display:none"> <span id="crew-count-label">Supportive Neighbors:</span> <span id="supportive">0.00</span></p>
+        <p class="with-icon"><img class="portrait" id="trophy-icon" src="art-trophy.jpg" alt=""> Trophies: <span id="trophies">0</span></p>
+        <p id="first-note">The first prestige unlocks at 2 tomato plants.</p>
+        <button type="button" id="prestige-btn" class="prestige" disabled>Prestige</button>
+        <p id="prestige-info">Better Soil (2× harvest) available with first trophy</p>
+        <p id="run-trophies" class="small"></p>
+        <div id="bylaws" style="display:none">
+          <label class="small">Minimum trophies
+            <input id="auto-min" type="number" min="1" value="4">
+          </label>
+          <label class="small"><input id="wait-upgrade" type="checkbox"> Wait until the next upgrade is affordable</label>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="script.js"></script>
+</body>
+</html>
