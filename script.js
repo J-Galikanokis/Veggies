@@ -513,9 +513,11 @@ function getYield(plot) {
 
 const SUPPORTIVE_SCALE = 300000;
 function addSupportive(veggie, amount) {
-  if (!state.firstNeighborAwarded || amount <= 0) return;
+  if (!veggie || amount <= 0) return;
+  if (!state.firstNeighborAwarded && !veggie.ranch) return;
   const mult = state.prestigeUpgrades.perpetualWinner ? 10 : 1;
-  state.supportive += (amount * veggie.sellPrice * mult) / SUPPORTIVE_SCALE;
+  const scale = veggie.ranch ? SUPPORTIVE_SCALE * SALSA[0].sellPrice : SUPPORTIVE_SCALE;
+  state.supportive += (amount * veggie.sellPrice * mult) / scale;
 }
 
 function getCycleTime(veggie, plot) {
@@ -690,8 +692,8 @@ function updateUI() {
     }
   });
 
-  if (state.prestigeSeen) {
-    PRESTIGE_UPS.forEach(p => {
+  if (state.prestigeSeen || state.level === 2) {
+    visiblePrestige().forEach(p => {
       if (!state.prestigeUpgrades[p.id] && state.trophies >= p.cost) supportiveNew = true;
     });
   }
@@ -836,10 +838,11 @@ function updateUI() {
       const rate = usePerSec ? (perMinute / 60).toFixed(1) + "/s" : perMinute.toFixed(1) + "/min";
       const income = usePerSec ? (incomePerMin / 60).toFixed(1) + "/s" : incomePerMin.toFixed(1) + "/min";
       const speedPct = Math.round(plot.speedLevels * 10);
-      const globalPct = Math.round((state.globalSpeed - 1) * 100);
       const mults = [];
       if (speedPct > 0) mults.push(`+${speedPct}% spd`);
-      if (globalPct > 0) mults.push(`+${globalPct}% global`);
+      if (state.globalSpeedAffected.includes(v.id) && state.globalSpeed > 1) mults.push(`×${state.globalSpeed.toFixed(2)} tea`);
+      if (state.yendySpeed) mults.push("×1.5 Yendy");
+      if (v.ranch && state.pupusaSpeed) mults.push("×1.5 pupusa");
       const multText = mults.length ? ` · ${mults.join(" ")}` : "";
       yieldInfo.textContent = `Inv: ${format(plot.inventory)} · Prod: ${rate} · Income: ${income}${multText}`;
     }
@@ -856,6 +859,10 @@ function updateUI() {
       if (state.prestigeUpgrades.betterSoil) lines.push("Better Soil: ×2 harvest");
       if (state.prestigeUpgrades.blueRibbon) lines.push("Blue Ribbon Soil: ×2 harvest");
       if (state.prestigeUpgrades.enrichedCompost) lines.push("Enriched Compost: ×1.5 speed");
+      if (state.yendySpeed) lines.push("Yendy: ×1.5 speed");
+      if (v.ranch && state.pupusaSpeed) lines.push("Pupusas: ×1.5 speed");
+      if (state.globalSpeedAffected.includes(v.id) && state.globalSpeed > 1) lines.push(`Compost tea: ×${state.globalSpeed.toFixed(2)} speed`);
+      if (v.ranch && state.achievements.tresLeches) lines.push("Tres Leches: ×2 sell");
       const sellMult = getSellPrice(v) / v.sellPrice;
       if (sellMult > 1.001) lines.push(`Market sell: ×${sellMult.toFixed(2)}`);
       const popKey = lines.join("|");
@@ -1003,7 +1010,7 @@ function updateUI() {
   const prestigeKey = `${state.prestigeSeen}|${state.trophies}|${state.level}|${state.marketUpgrades.distributionHub}|${state.marketUpgrades.feriaAgosto}|${visiblePrestige().map(p => state.prestigeUpgrades[p.id]).join("")}`;
   if (supportiveList && prestigeKey !== supportiveList.dataset.key) {
     supportiveList.dataset.key = prestigeKey;
-    if (!state.prestigeSeen) {
+    if (!(state.prestigeSeen || state.level === 2)) {
       supportiveList.innerHTML = `<p class="small">Unlock Broccoli to reveal trophy upgrades.</p>`;
     } else {
       supportiveList.innerHTML = visiblePrestige().map(p => {
@@ -1034,9 +1041,11 @@ function updateUI() {
   prestigeBtn.disabled = !canPrestige;
   prestigeBtn.classList.toggle("ready", canPrestige);
   const crew = crewName();
-  const accrualNote = state.prestigeUpgrades.perpetualWinner
-    ? `Harvests add ${crew} at ×10 (yield × sell price / 30,000).`
-    : `Harvests add ${crew} (yield × sell price / 300,000).`;
+  const accrualNote = state.level === 2
+    ? `Harvests add Compadres on the ranch scale${state.prestigeUpgrades.perpetualWinner ? ", at ×10" : ""}.`
+    : state.prestigeUpgrades.perpetualWinner
+      ? `Harvests add ${crew} at ×10 (yield × sell price / 30,000).`
+      : `Harvests add ${crew} (yield × sell price / 300,000).`;
   if (canPrestige) {
     prestigeInfo.textContent = `Prestige available. This run is worth ${trophyLabel(trophiesThisRun())}. ${state.firstNeighborAwarded ? accrualNote : ""}`;
   } else if (state.level3Unlocked) {
@@ -1106,7 +1115,7 @@ const ACHIEVEMENTS = [
   { id: "autosell", name: "They Sell Themselves", text: "The wagon kid is employed. Your hands are free to worry.", check: () => VEGGIES.some(v => state.upgrades[v.id].sell) },
   { id: "million", name: "Local Menace", text: "A million coins. The roadside stand has a security camera now.", check: () => state.lifetime.peakCoins >= 1e6 },
   { id: "billion", name: "The Bank Has Questions", text: "A billion coins, and not one of them is a tomato you waited for.", check: () => state.lifetime.peakCoins >= 1e9 },
-  { id: "market", name: "Slightly Less Rickety", text: "The stand has been upgraded. The rickets remain.", check: () => MARKET_UPS.some(m => state.marketUpgrades[m.id]) },
+  { id: "market", name: "Slightly Less Rickety", text: "The stand has been upgraded. The rickets remain.", check: () => MARKET_UPS.concat(RANCH_MARKETS).some(m => state.marketUpgrades[m.id]) },
   { id: "fullBed", name: "No Vacancies", text: "All nine crops. The soil has filed a complaint.", check: () => GARDEN.every(v => v.unlocked) },
   { id: "hoa", name: "HOA Pamphlet", text: "Twenty-five of one vegetable. A pamphlet has been slid under your door.", check: () => VEGGIES.some(v => state.plots[v.id].plants >= 25) },
   { id: "tea", name: "Neighborhood Tea", text: "You drank the compost tea. The compost tea drank you back.", check: () => state.globalSpeedLevels >= 1 },
@@ -1129,6 +1138,7 @@ const ACHIEVEMENTS = [
   { id: "pinche", name: "Pinche Tu", text: "Two what? Tu Madre.", check: () => state.ranchUnlocked },
   { id: "noGoingBack", name: "No Going Back", text: "The garden is still paying. It is not still yours.", check: () => state.ranchUnlocked },
   { id: "pupusas", name: "Pupusas, On the House", text: "+50% ranch speed. The comal is hot.", check: () => state.pupusaSpeed },
+  { id: "quadrillion", name: "Quadrillion Tears", text: "One quadrillion coins, and you still cried.", check: () => state.pupusaSpeed },
   { id: "super", name: "Super Obsessed", text: "You're doing it again!", check: () => {
     const counts = {};
     SALSA.forEach(v => {
@@ -1141,6 +1151,12 @@ const ACHIEVEMENTS = [
   { id: "crying", name: "It Begins With Crying", text: "You cut an onion on purpose.", check: () => state.onionHarvested },
   { id: "garlicKnows", name: "Everyone Knows", text: "The whole block knows what you had for lunch.", check: () => SALSA.find(v => v.id === "garlic").unlocked },
   { id: "soap", name: "Soap or Herb", text: "You called it cilantro. Someone called it soap.", check: () => SALSA.find(v => v.id === "cilantro").unlocked },
+  { id: "gloves", name: "Gloves Were Optional", text: "The gloves were a suggestion. You declined.", check: () => SALSA.find(v => v.id === "jalapeno").unlocked },
+  { id: "mistake", name: "This Was a Mistake", text: "Hotter was not the same as better.", check: () => SALSA.find(v => v.id === "serrano").unlocked },
+  { id: "dontTell", name: "Don't Tell Them", text: "Someone called this salsa. Do not correct them.", check: () => SALSA.find(v => v.id === "zucchini").unlocked },
+  { id: "greenOne", name: "The Green One", text: "Salsa verde. The club is briefly impressed.", check: () => SALSA.find(v => v.id === "tomatillo").unlocked },
+  { id: "potluck", name: "The Potluck", text: "Nobody asked. You brought it anyway.", check: () => SALSA.find(v => v.id === "celery").unlocked },
+  { id: "whoMint", name: "Who Asked for Mint", text: "The salsa is now a drink.", check: () => SALSA.find(v => v.id === "mint").unlocked },
   { id: "tooFar", name: "The Club Went Too Far", text: "Twelve plants. Zero restraint.", check: () => SALSA.every(v => v.unlocked) },
   { id: "lecheEvaporada", name: "Leche Evaporada", text: "One milk. The cake is still dry.", check: () => SALSA.find(v => v.id === "salsa-bell").unlocked },
   { id: "lecheCondensada", name: "Leche Condensada", text: "Two milks. Someone brought a fork.", check: () => SALSA.find(v => v.id === "tomatillo").unlocked },
@@ -1496,7 +1512,7 @@ document.addEventListener("click", (e) => {
   if (up.startsWith("prestige-")) {
     const id = up.slice("prestige-".length);
     const def = PRESTIGE_UPS.find(p => p.id === id);
-    if (def && state.prestigeSeen && !state.prestigeUpgrades[id] && state.trophies >= def.cost) {
+    if (def && (state.prestigeSeen || state.level === 2) && !state.prestigeUpgrades[id] && state.trophies >= def.cost) {
       if (id === "papusaRanch" && !state.marketUpgrades.distributionHub) return;
       if (id === "openLevel3" && !state.marketUpgrades.feriaAgosto) return;
       state.trophies -= def.cost;
