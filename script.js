@@ -284,17 +284,8 @@ function cheapestCoinUpgrade() {
       consider(cost, () => { up.speedBought++; plot.speedLevels++; });
     }
   });
-  const unlockedCount = VEGGIES.filter(v => v.unlocked).length;
-  if (unlockedCount >= 3 && unlockedCount % 3 === 0) {
-    const teaCost = Math.floor(25000 * Math.pow(1.5, state.globalSpeedLevels));
-    consider(teaCost, () => {
-      state.globalSpeed *= 1.25;
-      state.globalSpeedLevels++;
-      if (state.level !== 2) state.gardenTeaLevels = state.globalSpeedLevels;
-      VEGGIES.forEach(v => {
-        if (v.unlocked && !state.globalSpeedAffected.includes(v.id)) state.globalSpeedAffected.push(v.id);
-      });
-    });
+  if (teaReadyNow()) {
+    consider(teaCostNow(), applyTea);
   }
   return best;
 }
@@ -359,6 +350,7 @@ const state = {
   },
   prestigeSeen: false,
   firstNeighborAwarded: false,
+  firstCompadreAwarded: false,
   seenFirstPrestige: false,
   prestigeCount: 0,
   yendySpeed: false,
@@ -371,6 +363,9 @@ const state = {
   globalSpeedLevels: 0,
   gardenTeaLevels: 0,
   globalSpeedAffected: [],
+  ranchSpeed: 1,
+  ranchSpeedLevels: 0,
+  ranchSpeedAffected: [],
   timeScale: 1,
   plots: {},
   upgrades: {},
@@ -514,20 +509,58 @@ function getYield(plot) {
 }
 
 const SUPPORTIVE_SCALE = 300000;
+const RANCH_SUPPORTIVE_SCALE = SUPPORTIVE_SCALE * SALSA[SALSA.length - 1].sellPrice / GARDEN[GARDEN.length - 1].sellPrice;
 function addSupportive(veggie, amount) {
   if (!veggie || amount <= 0) return;
-  if (!state.firstNeighborAwarded && !veggie.ranch) return;
+  if (veggie.ranch) {
+    if (!state.firstCompadreAwarded) return;
+  } else if (!state.firstNeighborAwarded) return;
   const mult = state.prestigeUpgrades.perpetualWinner ? 10 : 1;
-  const scale = veggie.ranch ? SUPPORTIVE_SCALE * SALSA[0].sellPrice : SUPPORTIVE_SCALE;
+  const scale = veggie.ranch ? RANCH_SUPPORTIVE_SCALE : SUPPORTIVE_SCALE;
   state.supportive += (amount * veggie.sellPrice * mult) / scale;
+}
+
+function teaLevels() {
+  return state.level === 2 ? state.ranchSpeedLevels : state.globalSpeedLevels;
+}
+
+function teaReadyNow() {
+  const unlockedCount = VEGGIES.filter(v => v.unlocked).length;
+  const boardFull = unlockedCount >= VEGGIES.length;
+  return unlockedCount >= 3 && (boardFull || teaLevels() < Math.floor(unlockedCount / 3));
+}
+
+function teaCostNow() {
+  const base = state.level === 2 ? 5e18 : 25000;
+  return Math.floor(base * Math.pow(1.5, teaLevels()));
+}
+
+function applyTea() {
+  const affected = state.level === 2 ? state.ranchSpeedAffected : state.globalSpeedAffected;
+  if (state.level === 2) {
+    state.ranchSpeed *= 1.25;
+    state.ranchSpeedLevels++;
+  } else {
+    state.globalSpeed *= 1.25;
+    state.globalSpeedLevels++;
+    state.gardenTeaLevels = state.globalSpeedLevels;
+  }
+  VEGGIES.forEach(v => {
+    if (v.unlocked && !affected.includes(v.id)) affected.push(v.id);
+  });
+}
+
+function teaMult(veggie) {
+  if (veggie.ranch) return state.ranchSpeedAffected.includes(veggie.id) ? state.ranchSpeed : 1;
+  return state.globalSpeedAffected.includes(veggie.id) ? state.globalSpeed : 1;
 }
 
 function getCycleTime(veggie, plot) {
   const batches = Math.floor(plot.plants / 25);
   const plantSpeed = Math.pow(1.02, plot.plants);
   let globalMult = 1;
-  if (state.globalSpeedAffected.includes(veggie.id)) {
-    globalMult = state.globalSpeed;
+  if (state.globalSpeedAffected.includes(veggie.id) || state.ranchSpeedAffected.includes(veggie.id)) {
+    globalMult = teaMult(veggie);
   }
   const compost = state.prestigeUpgrades.enrichedCompost ? 1.5 : 1;
   const yendy = state.yendySpeed ? 1.5 : 1;
@@ -850,6 +883,7 @@ function updateUI() {
       const mults = [];
       if (speedPct > 0) mults.push(`+${speedPct}% spd`);
       if (state.globalSpeedAffected.includes(v.id) && state.globalSpeed > 1) mults.push(`×${state.globalSpeed.toFixed(2)} tea`);
+      if (v.ranch && state.ranchSpeedAffected.includes(v.id) && state.ranchSpeed > 1) mults.push(`×${state.ranchSpeed.toFixed(2)} tea`);
       if (state.yendySpeed) mults.push("×1.5 Yendy");
       if (v.ranch && state.pupusaSpeed) mults.push("×1.5 pupusa");
       const multText = mults.length ? ` · ${mults.join(" ")}` : "";
@@ -871,6 +905,7 @@ function updateUI() {
       if (state.yendySpeed) lines.push("Yendy: ×1.5 speed");
       if (v.ranch && state.pupusaSpeed) lines.push("Pupusas: ×1.5 speed");
       if (state.globalSpeedAffected.includes(v.id) && state.globalSpeed > 1) lines.push(`Compost tea: ×${state.globalSpeed.toFixed(2)} speed`);
+      if (v.ranch && state.ranchSpeedAffected.includes(v.id) && state.ranchSpeed > 1) lines.push(`Ranch tea: ×${state.ranchSpeed.toFixed(2)} speed`);
       if (v.ranch && state.achievements.tresLeches) lines.push("Tres Leches: ×2 sell");
       const sellMult = getSellPrice(v) / v.sellPrice;
       if (sellMult > 1.001) lines.push(`Market sell: ×${sellMult.toFixed(2)}`);
@@ -974,17 +1009,18 @@ function updateUI() {
     });
 
     const unlockedCount = VEGGIES.filter(v => v.unlocked).length;
+    const teaLevelsNow = teaLevels();
     const teaBase = state.level === 2 ? 5e18 : 25000;
     const boardFull = unlockedCount >= VEGGIES.length;
-    const teaReady = unlockedCount >= 3 && (boardFull || state.globalSpeedLevels < Math.floor(unlockedCount / 3));
+    const teaReady = unlockedCount >= 3 && (boardFull || teaLevelsNow < Math.floor(unlockedCount / 3));
     if (teaReady) {
-      const teaCost = Math.floor(teaBase * Math.pow(1.5, state.globalSpeedLevels));
+      const teaCost = Math.floor(teaBase * Math.pow(1.5, teaLevelsNow));
       const teaArt = state.level === 2 ? "art-ranch-tea.jpg" : "art-compost-tea.jpg";
       generousHTML += `
         <div class="upgrade-card card-with-art" data-upgrade="global-speed">
           ${portrait(teaArt)}
           <div>
-          <strong>Neighborhood Compost Tea ${state.globalSpeedLevels + 1}</strong> ${state.coins >= teaCost ? '<span class="red-dot"></span>' : ''}
+          <strong>${state.level === 2 ? "Ranch Tea" : "Neighborhood Compost Tea"} ${teaLevelsNow + 1}</strong> ${state.coins >= teaCost ? '<span class="red-dot"></span>' : ''}
           <p class="small">+25% speed for veggies unlocked at purchase</p>
           <button type="button" class="buy" data-upgrade="global-speed" data-cost="${teaCost}" data-owned="0">
             Buy (${format(teaCost)} c)
@@ -1050,6 +1086,7 @@ function updateUI() {
 
   const broccoliUnlocked = GARDEN.find(v => v.id === "broccoli")?.unlocked;
   if (broccoliUnlocked) state.prestigeSeen = true;
+  if (state.level === 2 && !state.firstCompadreAwarded) state.supportive = 0;
   const canPrestige = state.supportive >= 1;
   prestigeBtn.disabled = !canPrestige;
   prestigeBtn.classList.toggle("ready", canPrestige);
@@ -1063,6 +1100,8 @@ function updateUI() {
     prestigeInfo.textContent = `Prestige available. This run is worth ${trophyLabel(trophiesThisRun())}. ${state.firstNeighborAwarded ? accrualNote : ""}`;
   } else if (state.level3Unlocked) {
     prestigeInfo.textContent = "Level 3 is not open yet.";
+  } else if (state.level === 2 && !state.firstCompadreAwarded) {
+    prestigeInfo.textContent = "The first Compadre arrives when you buy your second Mint plant.";
   } else if (state.firstNeighborAwarded) {
     prestigeInfo.textContent = accrualNote;
   } else {
@@ -1281,6 +1320,10 @@ function buyPlant(id, count = 1) {
       state.supportive += 1;
     }
     if (veggie.id === "onion" && plot.plants >= 2 && !state.pupusaSpeed) state.pupusaSpeed = true;
+    if (veggie.id === "mint" && plot.plants >= 2 && !state.firstCompadreAwarded) {
+      state.firstCompadreAwarded = true;
+      state.supportive = 1;
+    }
     plot.plantCost = Math.max(plot.plantCost + 1, Math.ceil(plot.plantCost * 1.15));
   }
   state.lifetime.plantsBought += bought;
@@ -1384,9 +1427,15 @@ function prestige() {
     }
   });
   if (!state.prestigeUpgrades.familiarFaces) {
-    state.globalSpeed = 1;
-    state.globalSpeedLevels = 0;
-    state.globalSpeedAffected = [];
+    if (state.level === 2) {
+      state.ranchSpeed = 1;
+      state.ranchSpeedLevels = 0;
+      state.ranchSpeedAffected = [];
+    } else {
+      state.globalSpeed = 1;
+      state.globalSpeedLevels = 0;
+      state.globalSpeedAffected = [];
+    }
   }
   if (!state.prestigeUpgrades.standingOrder) {
     markets().forEach(m => {
@@ -1519,18 +1568,10 @@ document.addEventListener("click", (e) => {
     }
   }
   if (up === "global-speed") {
-    const teaBase = state.level === 2 ? 5e18 : 25000;
-    const teaCost = Math.floor(teaBase * Math.pow(1.5, state.globalSpeedLevels));
-    if (state.coins >= teaCost) {
+    const teaCost = teaCostNow();
+    if (teaReadyNow() && state.coins >= teaCost) {
       state.coins -= teaCost;
-      state.globalSpeed *= 1.25;
-      state.globalSpeedLevels++;
-      if (state.level !== 2) state.gardenTeaLevels = state.globalSpeedLevels;
-      VEGGIES.forEach(v => {
-        if (v.unlocked && !state.globalSpeedAffected.includes(v.id)) {
-          state.globalSpeedAffected.push(v.id);
-        }
-      });
+      applyTea();
       lastUpgradeState = "";
       updateUI();
     }
@@ -1702,6 +1743,10 @@ function saveGame() {
     globalSpeedLevels: state.globalSpeedLevels,
     gardenTeaLevels: state.gardenTeaLevels,
     globalSpeedAffected: state.globalSpeedAffected,
+    ranchSpeed: state.ranchSpeed,
+    ranchSpeedLevels: state.ranchSpeedLevels,
+    ranchSpeedAffected: state.ranchSpeedAffected,
+    firstCompadreAwarded: state.firstCompadreAwarded,
     hideOwnedHelpful: state.hideOwnedHelpful,
     upgradeAutobuy: state.upgradeAutobuy,
     autoPrestigeMin: state.autoPrestigeMin,
@@ -1736,7 +1781,7 @@ function loadGame() {
   if (!data || typeof data !== "object" || Array.isArray(data)) return;
   const numbers = {
     coins: 0, supportive: 0, trophies: 0, betterSoil: 1,
-    globalSpeed: 0.01, globalSpeedLevels: 0, gardenTeaLevels: 0, prestigeCount: 0,
+    globalSpeed: 0.01, globalSpeedLevels: 0, gardenTeaLevels: 0, ranchSpeed: 0.01, ranchSpeedLevels: 0, prestigeCount: 0,
   };
   Object.keys(numbers).forEach(key => {
     const n = finiteAtLeast(data[key], numbers[key] === 0.01 ? 0.01 : 0);
@@ -1747,7 +1792,7 @@ function loadGame() {
     const min = finiteAtLeast(data.autoPrestigeMin, 1);
     if (min != null) state.autoPrestigeMin = Math.floor(min);
   }
-  ["prestigeSeen", "firstNeighborAwarded", "seenFirstPrestige", "hideOwnedHelpful", "upgradeAutobuy", "waitForNextUpgrade", "yendySpeed", "ranchUnlocked", "testingRanch", "pupusaSpeed", "ranchStarted", "level3Unlocked", "onionHarvested", "showLevelJump"].forEach(key => {
+  ["prestigeSeen", "firstNeighborAwarded", "firstCompadreAwarded", "seenFirstPrestige", "hideOwnedHelpful", "upgradeAutobuy", "waitForNextUpgrade", "yendySpeed", "ranchUnlocked", "testingRanch", "pupusaSpeed", "ranchStarted", "level3Unlocked", "onionHarvested", "showLevelJump"].forEach(key => {
     if (typeof data[key] === "boolean") state[key] = data[key];
   });
   const stipend = finiteAtLeast(data.gardenStipend, 0);
@@ -1776,6 +1821,9 @@ function loadGame() {
   }
   if (Array.isArray(data.globalSpeedAffected)) {
     state.globalSpeedAffected = data.globalSpeedAffected.filter(id => knownIds.has(id));
+  }
+  if (Array.isArray(data.ranchSpeedAffected)) {
+    state.ranchSpeedAffected = data.ranchSpeedAffected.filter(id => knownIds.has(id));
   }
   if (Array.isArray(data.unlocked)) {
     CROPS.forEach(v => {
