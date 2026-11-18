@@ -156,7 +156,7 @@ Pending, not built:
 - Level 3. The Next Season can be bought on San Salvador Ranch after Feria de Agosto, for 2048 trophies. It does not open a new board.
 
 In the game:
-- San Salvador Ranch is level 2. The top-bar button jumps there and back until the ranch is bought. Ctrl+H hides that button, and Ctrl+H shows it again. Buying the ranch for 2048 trophies, after Distribution Hub, leaves the garden for good.
+- San Salvador Ranch is level 2. The top-bar button is hidden until Ctrl+H, and Ctrl+H hides it again. It jumps there and back until the ranch is bought. Buying the ranch for 2048 trophies, after Distribution Hub, leaves the garden for good.
 - The garden's coin rate freezes and keeps paying. Pinche Tu doubles that rate once. Pat says "Two what? Tu Madre."
 - Onion starts planted on a 5-second cycle. The next Onion is 1 Qa. Compadres, the four ranch markets, and the ranch art are in. The second Onion grants +50% ranch speed, once.
 

@@ -389,7 +389,7 @@ const state = {
   ranchStarted: false,
   level3Unlocked: false,
   onionHarvested: false,
-  hideLevelJump: false,
+  showLevelJump: false,
   savedSupportive: null,
 };
 
@@ -578,7 +578,7 @@ function applyChrome() {
     : "Prestige is available. Open Upgrades, then Supportive Neighbors.";
   const jump = document.getElementById("ranch-jump");
   if (jump) {
-    jump.style.display = state.ranchUnlocked || state.hideLevelJump ? "none" : "inline-block";
+    jump.style.display = state.ranchUnlocked || !state.showLevelJump ? "none" : "inline-block";
     jump.textContent = ranch ? "Garden" : "San Salvador Ranch";
   }
   const firstNote = document.getElementById("first-note");
@@ -1641,7 +1641,7 @@ function loop(now) {
 document.addEventListener("keydown", (e) => {
   if (!e.ctrlKey || e.altKey || e.metaKey || e.key.toLowerCase() !== "h") return;
   e.preventDefault();
-  state.hideLevelJump = !state.hideLevelJump;
+  state.showLevelJump = !state.showLevelJump;
   applyChrome();
   saveGame();
 });
@@ -1716,7 +1716,7 @@ function saveGame() {
     ranchStarted: state.ranchStarted,
     level3Unlocked: state.level3Unlocked,
     onionHarvested: state.onionHarvested,
-    hideLevelJump: !!state.hideLevelJump,
+    showLevelJump: !!state.showLevelJump,
     savedSupportive: state.savedSupportive,
   };
   try { localStorage.setItem("garden-club-v1", JSON.stringify(data)); } catch (e) {}
@@ -1743,7 +1743,7 @@ function loadGame() {
     const min = finiteAtLeast(data.autoPrestigeMin, 1);
     if (min != null) state.autoPrestigeMin = Math.floor(min);
   }
-  ["prestigeSeen", "firstNeighborAwarded", "seenFirstPrestige", "hideOwnedHelpful", "upgradeAutobuy", "waitForNextUpgrade", "yendySpeed", "ranchUnlocked", "testingRanch", "pupusaSpeed", "ranchStarted", "level3Unlocked", "onionHarvested", "hideLevelJump"].forEach(key => {
+  ["prestigeSeen", "firstNeighborAwarded", "seenFirstPrestige", "hideOwnedHelpful", "upgradeAutobuy", "waitForNextUpgrade", "yendySpeed", "ranchUnlocked", "testingRanch", "pupusaSpeed", "ranchStarted", "level3Unlocked", "onionHarvested", "showLevelJump"].forEach(key => {
     if (typeof data[key] === "boolean") state[key] = data[key];
   });
   const stipend = finiteAtLeast(data.gardenStipend, 0);
