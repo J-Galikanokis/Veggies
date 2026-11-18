@@ -290,6 +290,7 @@ function cheapestCoinUpgrade() {
     consider(teaCost, () => {
       state.globalSpeed *= 1.25;
       state.globalSpeedLevels++;
+      if (state.level !== 2) state.gardenTeaLevels = state.globalSpeedLevels;
       VEGGIES.forEach(v => {
         if (v.unlocked && !state.globalSpeedAffected.includes(v.id)) state.globalSpeedAffected.push(v.id);
       });
@@ -363,11 +364,12 @@ const state = {
   yendySpeed: false,
   achievements: {},
   achieveNew: false,
-  lifetime: { harvests: 0, plantsBought: 0, peakCoins: 0 },
+  lifetime: { harvests: 0, gardenHarvests: 0, ranchHarvests: 0, plantsBought: 0, peakCoins: 0, gardenPeak: 0 },
   betterSoil: 1,
   buyMode: 1, // legacy, now per-plot
   globalSpeed: 1,
   globalSpeedLevels: 0,
+  gardenTeaLevels: 0,
   globalSpeedAffected: [],
   timeScale: 1,
   plots: {},
@@ -1097,35 +1099,35 @@ function updateUI() {
 }
 
 const ACHIEVEMENTS = [
-  { id: "firstHarvest", name: "Touched Grass, Sort Of", text: "It was kale. The grass is relieved.", check: () => state.lifetime.harvests >= 1 },
-  { id: "hundredHarvests", name: "Repeat Offender", text: "One hundred harvests. The kale has a restraining order.", check: () => state.lifetime.harvests >= 100 },
+  { id: "firstHarvest", name: "Touched Grass, Sort Of", text: "It was kale. The grass is relieved.", check: () => state.lifetime.gardenHarvests >= 1 },
+  { id: "hundredHarvests", name: "Repeat Offender", text: "One hundred harvests. The kale has a restraining order.", check: () => state.lifetime.gardenHarvests >= 100 },
   { id: "tenKale", name: "Kale Loyalist", text: "Ten kale plants. Your friends have formed a support group.", check: () => state.plots.kale.plants >= 10 },
   { id: "spinach", name: "It Gets Worse", text: "You unlocked spinach and called it progress.", check: () => GARDEN.find(v => v.id === "spinach").unlocked },
   { id: "beets", name: "Beet Red", text: "The beets are in. So is the stain on the good towel.", check: () => GARDEN.find(v => v.id === "beets").unlocked },
   { id: "chard", name: "Rainbow Regret", text: "Swiss chard. You are one newsletter away from being insufferable.", check: () => GARDEN.find(v => v.id === "chard").unlocked },
   { id: "radishes", name: "Sharp Comment", text: "Radishes. Even the neighbors are making a face.", check: () => GARDEN.find(v => v.id === "radishes").unlocked },
   { id: "carrots", name: "What's Up, Neighbor", text: "Carrots unlocked. Do not tell the rabbit.", check: () => GARDEN.find(v => v.id === "carrots").unlocked },
-  { id: "yendy", name: "Yendy Has Notes", text: "A broccoli danced at you. This is a formal warning.", check: () => state.yendySpeed },
+  { id: "yendy", name: "Yendy Has Notes", text: "A broccoli danced at you. This is a formal warning.", check: () => state.yendySpeed && GARDEN.find(v => v.id === "broccoli").unlocked },
   { id: "peppers", name: "Pepper Upper", text: "Bell peppers. The club is pretending this was the plan.", check: () => GARDEN.find(v => v.id === "peppers").unlocked },
   { id: "tomatoes", name: "Heirloom Problems", text: "Tomatoes this slow should come with a will.", check: () => GARDEN.find(v => v.id === "tomatoes").unlocked },
   { id: "noticed", name: "A Neighbor Approves", text: "Someone on the block is willing to admit they know you.", check: () => state.firstNeighborAwarded },
   { id: "firstPrestige", name: "Gardener of the Month, Allegedly", text: "One trophy. The case looks very empty around it.", check: () => state.prestigeCount >= 1 },
   { id: "fivePrestige", name: "Five-Time Champion", text: "Five trophies. The club is legally required to clap.", check: () => state.prestigeCount >= 5 },
-  { id: "hired", name: "Eager, Apparently", text: "You paid a child to pick kale. The club calls this management.", check: () => VEGGIES.some(v => state.upgrades[v.id].harvest) },
-  { id: "autosell", name: "They Sell Themselves", text: "The wagon kid is employed. Your hands are free to worry.", check: () => VEGGIES.some(v => state.upgrades[v.id].sell) },
-  { id: "million", name: "Local Menace", text: "A million coins. The roadside stand has a security camera now.", check: () => state.lifetime.peakCoins >= 1e6 },
-  { id: "billion", name: "The Bank Has Questions", text: "A billion coins, and not one of them is a tomato you waited for.", check: () => state.lifetime.peakCoins >= 1e9 },
-  { id: "market", name: "Slightly Less Rickety", text: "The stand has been upgraded. The rickets remain.", check: () => MARKET_UPS.concat(RANCH_MARKETS).some(m => state.marketUpgrades[m.id]) },
+  { id: "hired", name: "Eager, Apparently", text: "You paid a child to pick kale. The club calls this management.", check: () => GARDEN.some(v => state.upgrades[v.id].harvest) },
+  { id: "autosell", name: "They Sell Themselves", text: "The wagon kid is employed. Your hands are free to worry.", check: () => GARDEN.some(v => state.upgrades[v.id].sell) },
+  { id: "million", name: "Local Menace", text: "A million coins. The roadside stand has a security camera now.", check: () => state.lifetime.gardenPeak >= 1e6 },
+  { id: "billion", name: "The Bank Has Questions", text: "A billion coins, and not one of them is a tomato you waited for.", check: () => state.lifetime.gardenPeak >= 1e9 },
+  { id: "market", name: "Slightly Less Rickety", text: "The stand has been upgraded. The rickets remain.", check: () => MARKET_UPS.some(m => state.marketUpgrades[m.id]) },
   { id: "fullBed", name: "No Vacancies", text: "All nine crops. The soil has filed a complaint.", check: () => GARDEN.every(v => v.unlocked) },
-  { id: "hoa", name: "HOA Pamphlet", text: "Twenty-five of one vegetable. A pamphlet has been slid under your door.", check: () => VEGGIES.some(v => state.plots[v.id].plants >= 25) },
-  { id: "tea", name: "Neighborhood Tea", text: "You drank the compost tea. The compost tea drank you back.", check: () => state.globalSpeedLevels >= 1 },
+  { id: "hoa", name: "HOA Pamphlet", text: "Twenty-five of one vegetable. A pamphlet has been slid under your door.", check: () => GARDEN.some(v => state.plots[v.id].plants >= 25) },
+  { id: "tea", name: "Neighborhood Tea", text: "You drank the compost tea. The compost tea drank you back.", check: () => state.gardenTeaLevels >= 1 },
   { id: "perpetual", name: "Always the Month", text: "Perpetual Winner. The other gardeners have stopped making eye contact.", check: () => state.prestigeUpgrades.perpetualWinner },
-  { id: "fast", name: "The Bar Gave Up", text: "Ten a second. The progress bar has gone to lie down.", check: () => VEGGIES.some(v => {
+  { id: "fast", name: "The Bar Gave Up", text: "Ten a second. The progress bar has gone to lie down.", check: () => GARDEN.some(v => {
     if (!v.unlocked || !state.plots[v.id].hasStarted) return false;
     const cycle = getCycleTime(v, state.plots[v.id]);
     return cycle > 0 && getYield(state.plots[v.id]) / cycle >= 10;
   }) },
-  { id: "buyer", name: "Shopping Problem", text: "A neighbor is buying plants with your money. You agreed to this.", check: () => VEGGIES.some(v => state.upgrades[v.id].buy) },
+  { id: "buyer", name: "Shopping Problem", text: "A neighbor is buying plants with your money. You agreed to this.", check: () => GARDEN.some(v => state.upgrades[v.id].buy) },
   { id: "ocd", name: "Obsessive Compulsive", text: "Three crops, one number. The rows are even. You are not.", check: () => {
     const counts = {};
     GARDEN.forEach(v => {
@@ -1161,13 +1163,18 @@ const ACHIEVEMENTS = [
   { id: "lecheEvaporada", name: "Leche Evaporada", text: "One milk. The cake is still dry.", check: () => SALSA.find(v => v.id === "salsa-bell").unlocked },
   { id: "lecheCondensada", name: "Leche Condensada", text: "Two milks. Someone brought a fork.", check: () => SALSA.find(v => v.id === "tomatillo").unlocked },
   { id: "laCrema", name: "La Crema", text: "Three milks. The sponge has given up.", check: () => SALSA.find(v => v.id === "mint").unlocked },
-  { id: "tresLeches", name: "Tres Leches", text: "The whole ranch is soaked. Ranch sell prices are doubled.", check: () => SALSA.find(v => v.id === "mint").unlocked },
+  { id: "tresLeches", name: "Tres Leches", text: "The whole ranch is soaked. Ranch sell prices are doubled.", check: () => state.achievements.lecheEvaporada && state.achievements.lecheCondensada && state.achievements.laCrema },
 ];
 
 let achievementsLive = false;
 let achieveToastTimer = 0;
 
 function checkAchievements() {
+  if (state.level === 2) {
+    if (state.coins > (state.lifetime.ranchPeak || 0)) state.lifetime.ranchPeak = state.coins;
+  } else if (state.coins > state.lifetime.gardenPeak) {
+    state.lifetime.gardenPeak = state.coins;
+  }
   if (state.coins > state.lifetime.peakCoins) state.lifetime.peakCoins = state.coins;
   const fresh = [];
   ACHIEVEMENTS.forEach(a => {
@@ -1226,13 +1233,20 @@ function startCycle(id) {
   plot.hasStarted = true;
 }
 
+function countHarvest(veggie, n) {
+  if (!(n > 0)) return;
+  state.lifetime.harvests += n;
+  if (veggie && veggie.ranch) state.lifetime.ranchHarvests += n;
+  else state.lifetime.gardenHarvests += n;
+}
+
 function harvest(id) {
   const plot = state.plots[id];
   if (!plot.ready) return;
   const veggie = VEGGIES.find(v => v.id === id);
   const amount = getYield(plot);
   plot.inventory += amount;
-  state.lifetime.harvests += 1;
+  countHarvest(veggie, 1);
   if (id === "onion") state.onionHarvested = true;
   addSupportive(veggie, amount);
   plot.ready = false;
@@ -1500,6 +1514,7 @@ document.addEventListener("click", (e) => {
       state.coins -= teaCost;
       state.globalSpeed *= 1.25;
       state.globalSpeedLevels++;
+      if (state.level !== 2) state.gardenTeaLevels = state.globalSpeedLevels;
       VEGGIES.forEach(v => {
         if (v.unlocked && !state.globalSpeedAffected.includes(v.id)) {
           state.globalSpeedAffected.push(v.id);
@@ -1558,7 +1573,7 @@ function loop(now) {
     if (cycle < 0.01 && plot.autoHarvest) {
       const amount = getYield(plot) * (dt / cycle);
       plot.inventory += amount;
-      state.lifetime.harvests += dt / cycle;
+      countHarvest(v, dt / cycle);
       addSupportive(v, amount);
       plot.progress = 1;
       plot.growing = true;
@@ -1669,6 +1684,7 @@ function saveGame() {
     betterSoil: state.betterSoil,
     globalSpeed: state.globalSpeed,
     globalSpeedLevels: state.globalSpeedLevels,
+    gardenTeaLevels: state.gardenTeaLevels,
     globalSpeedAffected: state.globalSpeedAffected,
     hideOwnedHelpful: state.hideOwnedHelpful,
     upgradeAutobuy: state.upgradeAutobuy,
@@ -1704,7 +1720,7 @@ function loadGame() {
   if (!data || typeof data !== "object" || Array.isArray(data)) return;
   const numbers = {
     coins: 0, supportive: 0, trophies: 0, betterSoil: 1,
-    globalSpeed: 0.01, globalSpeedLevels: 0, prestigeCount: 0,
+    globalSpeed: 0.01, globalSpeedLevels: 0, gardenTeaLevels: 0, prestigeCount: 0,
   };
   Object.keys(numbers).forEach(key => {
     const n = finiteAtLeast(data[key], numbers[key] === 0.01 ? 0.01 : 0);
@@ -1784,10 +1800,19 @@ function loadGame() {
     });
   }
   if (data.lifetime && typeof data.lifetime === "object") {
-    ["harvests", "plantsBought", "peakCoins"].forEach(key => {
+    ["harvests", "gardenHarvests", "ranchHarvests", "plantsBought", "peakCoins", "gardenPeak", "ranchPeak"].forEach(key => {
       const n = finiteAtLeast(data.lifetime[key], 0);
       if (n != null) state.lifetime[key] = n;
     });
+    if (data.lifetime.gardenHarvests == null) {
+      state.lifetime.gardenHarvests = state.ranchStarted ? 0 : state.lifetime.harvests;
+    }
+    if (data.lifetime.gardenPeak == null) {
+      state.lifetime.gardenPeak = (state.ranchUnlocked || state.testingRanch) ? 0 : state.lifetime.peakCoins;
+    }
+  }
+  if (data.gardenTeaLevels == null && !(state.ranchUnlocked || state.testingRanch)) {
+    state.gardenTeaLevels = state.globalSpeedLevels;
   }
   if (typeof data.achieveNew === "boolean") state.achieveNew = data.achieveNew;
   if (state.prestigeSeen) state.yendySpeed = true;
