@@ -193,7 +193,7 @@ Done:
 Locked:
 - Buying the next prestige unlock leaves the garden for good. The garden is level 1. Level 2 is San Salvador Ranch. There is no going back.
 - On San Salvador Ranch, Supportive Neighbors are called Compadres. They accrue, reset, and convert into trophies by the same rules, scaled so an Onion harvest counts like a Kale harvest. The counter starts at 0 when the ranch begins. A test visit sets it aside and puts it back when you return to the garden.
-- Level 1 keeps paying. At the moment the ranch unlocks, the garden's coin rate is frozen and paid forever. Salsa sales add on top. The coin readout shows both.
+- Level 1 keeps paying. At the moment the ranch unlocks, harvested garden crops are sold, then the garden's coin rate is frozen, doubled by Pinche Tu, and paid every second forever. Salsa sales add on top. The coin readout shows both.
 - The board is the same game on 12 plots, 3 columns by 4 rows. A crop appears when the one before it has 10 plants.
 - The run starts with 1 Onion, already planted and growing, on a 5-second cycle. The next Onion costs 1 Qa c. Later Onions follow ×1.15. The buy multiplier starts at ×1.
 - Each later crop's first plant costs 10× the crop before it. Sell price is one fifth of that first-plant cost. Per-plant ×1.02 speed and harvest still apply. Neighbor costs stay 10×, 50×, and 100× the first plant.

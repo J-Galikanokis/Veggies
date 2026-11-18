@@ -609,6 +609,13 @@ function enterRanch(permanent) {
     state.supportive = 0;
   }
   if (permanent && !state.ranchUnlocked) {
+    GARDEN.forEach(v => {
+      const plot = state.plots[v.id];
+      if (plot.inventory > 0) {
+        state.coins += plot.inventory * getSellPrice(v);
+        plot.inventory = 0;
+      }
+    });
     state.gardenStipend = boardRate(GARDEN) * 2;
     state.ranchUnlocked = true;
     state.savedSupportive = null;
@@ -1557,6 +1564,11 @@ function loop(now) {
   const realDt = (now - last) / 1000;
   const dt = realDt * (state.timeScale || 1);
   last = now;
+
+  if (state.level === 2) {
+    const gardenPay = state.ranchUnlocked ? state.gardenStipend : boardRate(GARDEN);
+    if (gardenPay > 0) state.coins += gardenPay * dt;
+  }
 
   VEGGIES.forEach(v => {
     const plot = state.plots[v.id];
