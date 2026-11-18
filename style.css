@@ -730,10 +730,6 @@ button.action, button.buy, button.sell, button.prestige, .tool-btn {
   button.action, button.buy, button.sell, .tool-btn { font-size: 1rem; }
 }
 
-@media (min-width: 1100px) {
-  body.ranch #plots { grid-template-columns: repeat(4, minmax(0, 1fr)); }
-}
-
 #time-scale { gap: 0.35rem; }
 .scale-row {
   display: flex;

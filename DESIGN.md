@@ -154,11 +154,15 @@ Prestige converts Supportive Neighbors into trophies. Upgrades must be purchased
 
 Pending, not built:
 - Level 3. The Next Season can be bought on San Salvador Ranch after Feria de Agosto, for 2048 trophies. It does not open a new board.
+- Slow Compadre accrual. One Mint harvest should be worth about the same as one Heirloom Tomato harvest (about 1.7 neighbors at one plant, before the usual plant multipliers). The garden's Supportive Neighbor scale stays as it is.
+- First ranch prestige. Buying the second Mint plant grants exactly 1 Compadre, once. Until then Compadres stay at 0 and Prestige stays locked. After that, harvests add Compadres and later prestiges follow the garden rules. A second Mint is not required again.
+- Compost Tea is one shared level counter, so garden purchases hide the ranch card until all 12 crops are unlocked. Split it. Ranch tea starts at level 1, base cost 5e18, and is offered at 3, 6, 9, and 12 crops, then stays available. It speeds only ranch crops unlocked at that purchase. Autobuy must charge the price on the button, not the garden's 25k.
 
 In the game:
 - San Salvador Ranch is level 2. The top-bar button is hidden until Ctrl+H, and Ctrl+H hides it again. It jumps there and back until the ranch is bought. Buying the ranch for 2048 trophies, after Distribution Hub, leaves the garden for good.
 - The garden's coin rate freezes and keeps paying. Pinche Tu doubles that rate once. Pat says "Two what? Tu Madre."
 - Onion starts planted on a 5-second cycle. The next Onion is 1 Qa. Compadres, the four ranch markets, and the ranch art are in. The second Onion grants +50% ranch speed, once.
+- Both boards are three columns. Compost Tea has a jar icon in the garden and a clay cup on the ranch.
 
 Done:
 - Sell button unavailable and grey until inventory exists. **(Implemented)**

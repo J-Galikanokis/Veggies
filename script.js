@@ -979,13 +979,17 @@ function updateUI() {
     const teaReady = unlockedCount >= 3 && (boardFull || state.globalSpeedLevels < Math.floor(unlockedCount / 3));
     if (teaReady) {
       const teaCost = Math.floor(teaBase * Math.pow(1.5, state.globalSpeedLevels));
+      const teaArt = state.level === 2 ? "art-ranch-tea.jpg" : "art-compost-tea.jpg";
       generousHTML += `
-        <div class="upgrade-card" data-upgrade="global-speed">
+        <div class="upgrade-card card-with-art" data-upgrade="global-speed">
+          ${portrait(teaArt)}
+          <div>
           <strong>Neighborhood Compost Tea ${state.globalSpeedLevels + 1}</strong> ${state.coins >= teaCost ? '<span class="red-dot"></span>' : ''}
           <p class="small">+25% speed for veggies unlocked at purchase</p>
           <button type="button" class="buy" data-upgrade="global-speed" data-cost="${teaCost}" data-owned="0">
             Buy (${format(teaCost)} c)
           </button>
+          </div>
         </div>`;
     }
 
